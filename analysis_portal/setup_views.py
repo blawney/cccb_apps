@@ -141,7 +141,7 @@ def upload_page(request, project_pk):
 			else:
 				samplename = None	
 			existing_files.append(FileDisplay(samplename, f.pk, f.filepath))
-        return render(request, 'analysis_portal/details.html', {'project_name': project.name, 'existing_files':existing_files, 'project_pk': project_pk})
+        return render(request, 'analysis_portal/upload_page.html', {'project_name': project.name, 'existing_files':existing_files, 'project_pk': project_pk})
     else:        
 		return HttpResponseBadRequest('')
 	

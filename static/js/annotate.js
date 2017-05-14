@@ -3,46 +3,36 @@ var container = document.getElementById("add-sample-panel-inner");
 var sampleEntryDialog = document.getElementById("sample-entry-box");
 var addSampleDialogBtn = document.getElementById("add-sample-dialog-btn");
 var cancelSampleDialogBtn = document.getElementById("cancel-sample-dialog-btn");
+var goToSummaryBtn = document.getElementById("go-to-summary-btn");
 
-            window.addEventListener("dragover", function(e){
-                e = e || event;
-                e.preventDefault();
-            });
-            window.addEventListener("drop", function(e){
-                e = e || event;
-                e.preventDefault(); 
-            });
+// Prevent the drag/drop from doing anything if it's dropped off-target
+window.addEventListener("dragover", function(e){
+    e = e || event;
+    e.preventDefault();
+});
+window.addEventListener("drop", function(e){
+    e = e || event;
+    e.preventDefault(); 
+});
 
-function getCookie(name) {
-    var cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        var cookies = document.cookie.split(';');
-        for (var i = 0; i < cookies.length; i++) {
-            var cookie = jQuery.trim(cookies[i]);
-            // Does this cookie string begin with the name we want?
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
-
+// shows the 'add sample' dialog
 addNewSampleBtn.addEventListener("click", function(e){
         sampleEntryDialog.style.display = "block";
         document.getElementById("main-container").classList.add("blur");
 });
 
-
+// closes out the add sample dialog with no action
 cancelSampleDialogBtn.addEventListener("click", function(e){
         sampleEntryDialog.style.display = "none";
         document.getElementById("main-container").classList.remove("blur");	
 });
 
+// called when the new sample is added, as button is clicked
+// makes ajax call to server
 addSampleDialogBtn.addEventListener("click", function(e){
-        sampleEntryDialog.style.display = "none";
-        document.getElementById("main-container").classList.remove("blur");
+
+	sampleEntryDialog.style.display = "none";
+	document.getElementById("main-container").classList.remove("blur");
 	var sampleEntry = document.getElementById("sample-entry-input");
 	var samplename = sampleEntry.value;
 	sampleEntry.value = ""; 
@@ -52,28 +42,27 @@ addSampleDialogBtn.addEventListener("click", function(e){
 	metaEntry.value = ""; 
 
 	//upload to db
-        var pk = document.getElementById("pk-field").value;
-        var xhr = new XMLHttpRequest();
-        var csrftoken = getCookie('csrftoken');
-        xhr.open("POST", "/analysis/create-sample/" + pk + "/");
-        xhr.setRequestHeader("X-CSRFToken", csrftoken);
+	var pk = document.getElementById("pk-field").value;
+	var xhr = new XMLHttpRequest();
+	var csrftoken = getCookie('csrftoken');
+	xhr.open("POST", "/analysis/create-sample/" + pk + "/");
+	xhr.setRequestHeader("X-CSRFToken", csrftoken);
 	xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-        xhr.onreadystatechange = function(){
-                if(xhr.readyState === 4){
-                        if(xhr.status === 200){
-				addNewSampleBox(samplename);
-                        }
-                        else{
-                                console.log("Problem with adding samples");
-                        }
-                }
-        }
-        xhr.send("name="+samplename + "&metadata=" + sampleMeta);
+	xhr.onreadystatechange = function(){
+		if(xhr.readyState === 4){
+				if(xhr.status === 200){
+					addNewSampleBox(samplename);
+				}
+				else{
+					alert("There was a problem creating the sample.  Try again.");
+				}
+		}
+	}
+	xhr.send("name="+samplename + "&metadata=" + sampleMeta);
 });
 
 
-
-
+// Creates and adds the dialog box for creating a new sample
 addNewSampleBox = function(samplename){
 	var outer = document.createElement("div");
 	var inner1 = document.createElement("div");
@@ -104,7 +93,7 @@ addNewSampleBox = function(samplename){
 	outer.addEventListener("drop", dropFunc);        
 };
 
-
+// function to remove sample.  Calls the back-end to remove the association between the removed sample and any files that were previously linked to it.
 rmSample = function(e){
 	var target = e.target;
 	var parent = target.parentElement;
@@ -113,81 +102,66 @@ rmSample = function(e){
 
 	//check that the sample box is empty.  Not going to allow users to remove samples that have files assigned to them
 	var enclosedSampleTags = grandParent.querySelectorAll('.sample-display');
-	console.log(enclosedSampleTags);
 
-	
-
-	if (enclosedSampleTags == null){
-		console.log('was empty');
-	}
-	else if (enclosedSampleTags.length > 0){
-		console.log('was greater than zero');
+	if (enclosedSampleTags.length > 0){
 		alert('You cannot remove a sample that has files assigned.  Remove the assigned files and try again.');
 		return;
 	}
 
 	greatGrandParent.removeChild(grandParent);
 
-        var pk = document.getElementById("pk-field").value;
-        var samplename = grandParent.getAttribute("samplename");
-        var xhr = new XMLHttpRequest();
-        var csrftoken = getCookie('csrftoken');
-        xhr.open("POST", "/analysis/remove-sample/" + pk + "/");
-        xhr.setRequestHeader("X-CSRFToken", csrftoken);
-        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-        xhr.onreadystatechange = function(){
-                if(xhr.readyState === 4){
-                        if(xhr.status === 200){
-                                console.log('success');
-                        }
-                        else{
-                                console.log("Problem with removing sample");
-                        }
-                }
-        }
-        xhr.send("samplename="+samplename);	
+	var pk = document.getElementById("pk-field").value;
+	var samplename = grandParent.getAttribute("samplename");
+	var xhr = new XMLHttpRequest();
+	var csrftoken = getCookie('csrftoken');
+	xhr.open("POST", "/analysis/remove-sample/" + pk + "/");
+	xhr.setRequestHeader("X-CSRFToken", csrftoken);
+	xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+	xhr.onreadystatechange = function(){
+		if(xhr.readyState === 4){
+				if(xhr.status === 200){
+					console.log('successfully removed sample');
+				}
+				else{
+					alert("Did not succeed in removing the sample.  Refresh the page and try again.");
+				}
+		}
+	}
+	xhr.send("samplename="+samplename);	
 	
 };
 
+// some functions for handling the drag/drop
 dragStartFunc = function(e){
-    console.log('drag start!');
-  e.dataTransfer.setData("text", e.target.id);
-    e.dataTransfer.effectAllowed = "move";
-    
+	e.dataTransfer.setData("text", e.target.id);
+	e.dataTransfer.effectAllowed = "move";  
 };
 
 dragEndFunc = function(e){
-    console.log('dragend!');
     //e.dataTransfer.clearData();
 };
 
 dragEnterFunc = function(e){
-    console.log('drag enter!');
     e.preventDefault();
     e.stopPropagation();
 };
 
 dragOverFunc =  function(e){
-                    console.log('drag over!');
-
     e.preventDefault();
     e.stopPropagation();
 };
 
 dropFunc = function(e){
-    console.log('dropped in ' + e.target.id);
-    e.preventDefault();
-    var id = e.dataTransfer.getData("text");
-    e.target.appendChild(document.getElementById(id));
-    e.stopPropagation();
-    checkAllAssigned();
+	e.preventDefault();
+	var id = e.dataTransfer.getData("text");
+	e.target.appendChild(document.getElementById(id));
+	e.stopPropagation();
+	checkAllAssigned();
 };
 
 dragLeaveFunc =  function(e){
-    console.log('left area!');
-    console.log(e.target);
-    e.preventDefault();
-    e.stopPropagation();
+	e.preventDefault();
+	e.stopPropagation();
 };
 
 dropTargets = document.getElementsByClassName("sample-box");
@@ -214,9 +188,11 @@ checkAllAssigned = function(){
 		proceedPanel.style.display = 'block';
 	}
 }
+// end section on drag/drop functionality
 
 
-var goToSummaryBtn = document.getElementById("go-to-summary-btn");
+// As we proceed to the next page, map the files to the samples by scanning through the UI 
+// and extracting out the associations via the element's attributes
 goToSummaryBtn.addEventListener("click", function(e){
 	var sampleBoxes = document.getElementsByClassName("sample-box");
 	var sampleToFileMapping = {};
@@ -225,63 +201,33 @@ goToSummaryBtn.addEventListener("click", function(e){
 		var samplename = box.getAttribute("samplename");
 		sampleToFileMapping[samplename] = []; 
 		var descendants =  box.querySelectorAll(".sample-display");
-		console.log(descendants);
 		for(var j=0; j<descendants.length; j++){
 			var attr = descendants[j].getAttribute("filename");
 			sampleToFileMapping[samplename].push(attr);
 		}
 	}
-	console.log(sampleToFileMapping);
 	createMappings(JSON.stringify(sampleToFileMapping));
 });
 
-//createMappings = function(jsonStr){
-//
-//        var pk = document.getElementById("pk-field").value;
-//
-//        var xhr = new XMLHttpRequest();
-//        var csrftoken = getCookie('csrftoken');
-//        xhr.open("POST", "/analysis/map-files/" + pk + "/");
-//        xhr.setRequestHeader("X-CSRFToken", csrftoken);
-//        //xhr.setRequestHeader('Content-type', 'application/json');
-//	xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-//        xhr.onreadystatechange = function(){
-//                if(xhr.readyState === 4){
-//                        if(xhr.status === 200){
-//                                console.log('success');
-//				window.location.assign("/analysis/summary/" + pk + "/");
-//                        }
-//                        else{
-//                                console.log("Problem with updating samples");
-//                        }
-//                }
-//        }
-//        xhr.send("mapping="+jsonStr);
-//};
-
-
+// Sends the request to the backend, and forwards onto the next page
 createMappings = function(jsonStr){
 
-        var pk = document.getElementById("pk-field").value;
+	var pk = document.getElementById("pk-field").value;
 
-        var xhr = new XMLHttpRequest();
-        var csrftoken = getCookie('csrftoken');
-        xhr.open("POST", "/analysis/map-files/" + pk + "/");
-        xhr.setRequestHeader("X-CSRFToken", csrftoken);
-        //xhr.setRequestHeader('Content-type', 'application/json');
+	var xhr = new XMLHttpRequest();
+	var csrftoken = getCookie('csrftoken');
+	xhr.open("POST", "/analysis/map-files/" + pk + "/");
+	xhr.setRequestHeader("X-CSRFToken", csrftoken);
+
 	xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-        xhr.onreadystatechange = function(){
-                if(xhr.readyState === 4){
-                        if(xhr.status === 200){
-                                console.log('success');
+	xhr.onreadystatechange = function(){
+		if(xhr.readyState === 4){
+			if(xhr.status === 200){
 				window.location.assign("/analysis/summary/" + pk + "/");
-                        }
-                        else{
-                                console.log("Problem with updating samples");
-                        }
-                }
-        }
-        xhr.send("mapping="+jsonStr);
+			}
+		}
+	}
+	xhr.send("mapping="+jsonStr);
 };
 
 document.addEventListener("DOMContentLoaded", function () {
